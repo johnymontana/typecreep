@@ -57,12 +57,14 @@ public class NeoServerExtension
 
             Long duration = timeUp - timeDown;
 
+            Long interDuration = (Long)obs.get("interDuration");
+
             // TODO: get NEXT character duration
             // TODO: split on spaces
 
 
             query = query +
-                    "-[:NEXT_CHAR {duration: " + duration.toString() + " }]->" +
+                    "-[:NEXT_CHAR {duration: " + interDuration.toString() + " }]->" +
                     "(:LETTER {char: '" + character + "', duration: " + duration.toString()+" })";
         }
         query = query +
@@ -128,6 +130,23 @@ public class NeoServerExtension
             else {
                 // append character to charWordList
                 // append ACTUAL character to word
+                // calculate inter-character duration here, add to character map
+
+                Long duration;
+                if (charListIt.hasNext()) {
+                    Map<String, Object> nextChar = charList.get(count);
+
+                    Long timeUp = ((Double) character.get("timeUp")).longValue();
+                    Long timeDown = ((Double) nextChar.get("timeDown")).longValue();
+
+                    duration = timeDown - timeUp;
+                }
+                else {
+                    duration = ((Double)0.0).longValue();
+                }
+
+                character.put("interDuration", duration);
+
                 word = word + character.get("character");
                 charWordList.add(character);
             }
