@@ -15,10 +15,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -37,6 +34,77 @@ public class NeoServerExtension
         this.gson_obj = new Gson();
     }
 
+    /** classifyWord
+     *
+     * @param word
+     * @param characterList
+     * @return
+     */
+    public ArrayList<Object> classifyWord(String word, ArrayList<Map> characterList) {
+        ArrayList<Object> resultsArray = new ArrayList<Object>();
+
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("word", word);
+
+        String query =
+                "MATCH p=(:WORD {word: {word} })-[r*]-(:User) RETURN "+
+                "{user: [x IN nodes(p) WHERE 'User' IN labels(x) | x.id], " +
+                "interDurations:[x IN rels(p) WHERE type(x)='NEXT_CHAR' | x.duration], " +
+                "charDurations: [x IN nodes(p) WHERE 'LETTER' IN labels(x) | x.duration], word: {word}} AS observations";
+
+        Long sumDuration = ((Double)0.0).longValue();
+        Long sumInter = ((Double)0.0).longValue();
+
+        for (Map<String, Object> obs : characterList){
+            String character = (String)obs.get("character");
+            Long timeUp = ((Double)obs.get("timeUp")).longValue();
+            Long timeDown = ((Double)obs.get("timeDown")).longValue();
+
+            Long duration = timeUp - timeDown;
+            Long interDuration = (Long)obs.get("interDuration");
+
+            sumDuration += duration;
+            sumInter += interDuration;
+
+        }
+
+
+        Iterator<Map<String, Object>> result = executionEngine.execute(query, params).iterator();
+        while (result.hasNext()) {
+            Map<String, Object> row = result.next();
+            //resultsArray.add(row.get("observations"));
+            Map<String, Object> obs = (Map)row.get("observations");
+            Long obsSumDuration = ((Double)0.0).longValue();
+            Long obsSumInter = ((Double)0.0).longValue();
+
+            List<Long> inters = (List)obs.get("interDurations");
+            for (Long x : inters){
+                obsSumInter += x;
+            }
+
+            List<Long> charDurs = (List)obs.get("charDurations");
+            for (Long x : charDurs){
+                obsSumDuration += x;
+            }
+
+            Map<String, Object> resultMap = new HashMap<String, Object>();
+            resultMap.put("user", obs.get("user"));
+            resultMap.put("word", obs.get("word"));
+            resultMap.put("interDiff", sumInter-obsSumInter);
+            resultMap.put("charDiff", sumDuration-obsSumDuration);
+            resultsArray.add(resultMap);
+
+        }
+        return resultsArray;
+    }
+
+    /** insertWord
+     *
+     * @param user
+     * @param word
+     * @param characterList
+     * @return
+     */
     public ArrayList<Object> insertWord(String user, String word, ArrayList<Map> characterList){
         ArrayList<Object> resultsArray = new ArrayList<Object>();
 
@@ -82,6 +150,76 @@ public class NeoServerExtension
         return resultsArray;
     }
 
+    /** classifyData
+     *
+     * @param dataJson
+     * @return
+     * @throws Exception
+     */
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/classify")
+    public Response classifyData(String dataJson) throws Exception {
+        TypeCreepData typeData = this.gson_obj.fromJson(dataJson, TypeCreepData.class);
+
+        ArrayList<Map> charList = typeData.getData();
+        ArrayList<Map> words = new ArrayList<Map>();
+        ArrayList<Map> charWordList = new ArrayList<Map>();
+
+        Integer count = 0;
+        String word = "";
+
+        Iterator<Map> charListIt = charList.iterator();
+
+        while (charListIt.hasNext()) {
+            count++;
+            Map<String, Object> character = charListIt.next();
+            if (character.get("character").equals(" ")){
+                Map<String, Object> wordEntry = new HashMap<String, Object>();
+                wordEntry.put("word", word);
+                wordEntry.put("characters", charWordList);
+                words.add(wordEntry);
+                word = "";
+                charWordList = new ArrayList<Map>();
+            } else {
+                Long duration;
+                if (charListIt.hasNext()) {
+                    Map<String, Object> nextChar = charList.get(count);
+                    Long timeUp = ((Double) character.get("timeUp")).longValue();
+                    Long timeDown = ((Double) nextChar.get("timeDown")).longValue();
+
+                    duration = timeDown - timeUp;
+                } else {
+                    duration = ((Double)0.0).longValue();
+                }
+
+                character.put("interDuration", duration);
+                word = word + character.get("character");
+                charWordList.add(character);
+            }
+        }
+
+        ArrayList<Object> resultsArray = new ArrayList<Object>();
+        for (Map<String, Object> w: words) {
+            resultsArray.add(classifyWord((String)w.get("word"), (ArrayList<Map>)w.get("characters")));
+
+        }
+
+        // TODO: write function to aggregate results from classifyWord
+
+        return Response.ok(objectMapper.writeValueAsString(resultsArray), MediaType.APPLICATION_JSON).build();
+
+
+    }
+
+
+    /** insertData
+     *
+     * @param dataJson
+     * @return
+     * @throws Exception
+     */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -114,10 +252,7 @@ public class NeoServerExtension
             Map<String, Object> character = charListIt.next();
             if (character.get("character").equals(" ")){
 
-                // append charWordList to words
-                // FIXME: keep track of word??, separate ArrayList?? (probably another map)
-                // null out word
-                // null out charWordList
+
                 Map<String, Object> wordEntry = new HashMap<String, Object>();
                 wordEntry.put("word", word);
                 wordEntry.put("characters", charWordList);
@@ -167,10 +302,6 @@ public class NeoServerExtension
 
 
         return Response.ok(objectMapper.writeValueAsString(resultsArray), MediaType.APPLICATION_JSON).build();
-
-
-
-
 
     }
 
