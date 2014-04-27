@@ -46,6 +46,7 @@ public class NeoServerExtension
 
         params.put("word", word);
         String query =
+                "MERGE (u:User {id: {user} }) \n" +
                 "MERGE (:WORD {word: {word} })";
 
 
@@ -65,7 +66,7 @@ public class NeoServerExtension
                     "(:LETTER {char: '" + character + "', duration: " + duration.toString()+" })";
         }
         query = query +
-                "-[e:FROM_USER]->(u:User {id: {user} }) \n" +
+                "-[e:FROM_USER]->(u) \n" +
                 "ON CREATE SET e.count = 1 \n" +
                 "ON MATCH SET e.count = coalesce(e.count, 0) + 1 \n" +
                 "RETURN {user: u.id, count: e.count} as created";
