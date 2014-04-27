@@ -37,44 +37,37 @@ public class NeoServerExtension
         this.gson_obj = new Gson();
     }
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/insert")
-    public Response insertData(String dataJson) throws Exception {
-        TypeCreepData typeData = this.gson_obj.fromJson(dataJson, TypeCreepData.class);
-
+    public ArrayList<Object> insertWord(String user, String word, ArrayList<Map> characterList){
         ArrayList<Object> resultsArray = new ArrayList<Object>();
 
         Map<String, Object> params = new HashMap<String, Object>();
 
-        String user = typeData.getUser();
-
         params.put("user", user);
-        Map<String, Object> first = typeData.getData().get(0);
-        params.put("char", first.get("character"));
+
+        params.put("word", word);
         String query =
-                "MERGE (:LETTER {char: {char} })";
+                "MERGE (:WORD {word: {word} })";
 
-        // APPEND all other characters to query String
 
-        for (Map<String, Object> obs : typeData.getData()) {
+        for (Map<String, Object> obs : characterList) {
             String character = (String)obs.get("character");
-            Integer timeUp = (Integer)obs.get("timeUp");
-            Integer timeDown = (Integer)obs.get("timeDown");
+            Long timeUp = ((Double)obs.get("timeUp")).longValue();
+            Long timeDown = ((Double)obs.get("timeDown")).longValue();
 
-            Integer duration = timeDown - timeUp;
+            Long duration = timeUp - timeDown;
 
             // TODO: get NEXT character duration
+            // TODO: split on spaces
+
 
             query = query +
                     "-[:NEXT_CHAR {duration: " + duration.toString() + " }]->" +
-                    "(:LETTER {char: " + character + ", duration: " + duration.toString()+" })";
+                    "(:LETTER {char: '" + character + "', duration: " + duration.toString()+" })";
         }
         query = query +
                 "-[e:FROM_USER]->(u:User {id: {user} }) \n" +
                 "ON CREATE SET e.count = 1 \n" +
-                "ON MATCH SET coalesce(e.count, 0) + 1 \n" +
+                "ON MATCH SET e.count = coalesce(e.count, 0) + 1 \n" +
                 "RETURN {user: u.id, count: e.count} as created";
 
         Iterator<Map<String, Object>> result = executionEngine.execute(query, params).iterator();
@@ -82,6 +75,76 @@ public class NeoServerExtension
             Map<String, Object> row = result.next();
             resultsArray.add(row.get("created"));
         }
+
+        return resultsArray;
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/insert")
+    public Response insertData(String dataJson) throws Exception {
+
+
+        TypeCreepData typeData = this.gson_obj.fromJson(dataJson, TypeCreepData.class);
+
+        //ArrayList<Object> resultsArray = new ArrayList<Object>();
+
+        String user = typeData.getUser();
+        //String word = "placeholder";        // FIXME: get the actual word here
+        ArrayList<Map> charList = typeData.getData();       // FIXME: split on spaces
+
+        ArrayList<Map> words = new ArrayList<Map>();    // [{}]
+        Map<String, Object> wordCharMap = new HashMap<String, Object>();
+
+
+        ArrayList<Map> charWordList = new ArrayList<Map>();
+
+        Integer count = 0;
+        String word = "";
+        //String user = "";
+
+        Iterator<Map> charListIt = charList.iterator();
+
+        while (charListIt.hasNext()){
+            count++;
+            Map<String, Object> character = charListIt.next();
+            if (character.get("character").equals(" ")){
+
+                // append charWordList to words
+                // FIXME: keep track of word??, separate ArrayList?? (probably another map)
+                // null out word
+                // null out charWordList
+                Map<String, Object> wordEntry = new HashMap<String, Object>();
+                wordEntry.put("word", word);
+                wordEntry.put("characters", charWordList);
+                words.add(wordEntry);
+                word = "";
+                charWordList = new ArrayList<Map>();
+
+            }
+
+            else {
+                // append character to charWordList
+                // append ACTUAL character to word
+                word = word + character.get("character");
+                charWordList.add(character);
+            }
+
+
+
+
+
+
+        }
+
+        ArrayList<Object> resultsArray = new ArrayList<Object>();
+        for (Map<String, Object> w : words){
+            resultsArray.add(insertWord(user, (String)w.get("word"), (ArrayList<Map>)w.get("characters") ));
+        }
+        //ArrayList<Object> resultsArray = insertWord(user, word, charList);
+
+
 
         return Response.ok(objectMapper.writeValueAsString(resultsArray), MediaType.APPLICATION_JSON).build();
 
