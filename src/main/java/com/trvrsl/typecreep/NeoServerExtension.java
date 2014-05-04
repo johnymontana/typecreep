@@ -257,6 +257,118 @@ public class NeoServerExtension
 
     }
 
+    /** getSampleCharList
+     *
+     * @param dataList - the data to parse
+     */
+    public ArrayList<String> getSampleCharList(ArrayList<Map> dataList) {
+        ArrayList<String> charList = new ArrayList<String>();
+
+        for (int i = 0; i < dataList.size(); i++) {
+            Map datum = dataList.get(i);
+            charList.add((String) datum.get("character"));
+        }
+
+        return charList;
+    }
+
+    /** getSampleCharTimings
+     *
+     * @param dataList - the data to parse
+     */
+    public ArrayList<Long> getSampleCharTimings(ArrayList<Map> dataList) {
+        ArrayList<Long> charTimings = new ArrayList<Long>();
+
+        for (int i = 0; i < dataList.size(); i++) {
+            Map datum = dataList.get(i);
+            Long keyDown = ((Double) datum.get("timeDown")).longValue();
+            Long keyUp = ((Double) datum.get("timeUp")).longValue();
+            Long delta = keyUp - keyDown;
+            charTimings.add(delta);
+        }
+
+        return charTimings;
+    }
+
+    /** getSampleInterTimings
+     *
+     * @param dataList - the data to parse
+     */
+    public ArrayList<Long> getSampleInterTimings(ArrayList<Map> dataList) {
+        ArrayList<Long> interTimings = new ArrayList<Long>();
+
+        for (int i = 0; i < dataList.size(); i++) {
+            Map datum = dataList.get(i);
+            Long keyDown = ((Double) datum.get("timeDown")).longValue();
+            if (i > 0) {
+                Map lastDatum = dataList.get(i-1);
+                Long lastKeyUp = ((Double) lastDatum.get("timeUp")).longValue();
+                Long interDelta = keyDown - lastKeyUp;
+                interTimings.add(interDelta);
+            }
+        }
+
+        return interTimings;
+    }
+
+    /** getSampleNGrams
+     *
+     * Converts a set of timings into a data structure that maps n-grams into lists of timings of the following form:
+     *
+     *   `[l, i, l, ..., l]`
+     *
+     * where `l` is a letter timing and `i` is an inter-letter timing.
+     *
+     * @param charList - the list of characters (letters) in the sample
+     * @param n - the number of grams to grammify the thing into
+     */
+    public Map<String,ArrayList<Double>> getSampleNGrams(ArrayList<String> charList,
+                                                          ArrayList<Long> charTimings,
+                                                          ArrayList<Long> interTimings, Integer n) {
+        Map<String,ArrayList<Double>> nGrams = new HashMap<String,ArrayList<Double>>();
+        Map<String,Long> nGramCounts = new HashMap<String,Long>();
+        for (int i = 0; i < charList.size() - n; i++) {
+            // The i-th n-gram string
+            String nGramString = "";
+            // The timings array for the i-th n-gram
+            ArrayList<Double> nGramTimings = new ArrayList<Double>();
+            for (int j = i; j < i + n; j++) {
+                // Add the j-th character of the i-th n-gram to the string
+                nGramString += charList.get(j);
+                // Add the j-th character timing
+                nGramTimings.add(charTimings.get(j).doubleValue());
+                // Add the (j-1)-th inter-character timing
+                if (j > i) {
+                    nGramTimings.add(interTimings.get(j-1).doubleValue());
+                }
+            }
+            // Note that we have seen this n-gram string
+            if (! nGramCounts.containsKey(nGramString)) {
+                nGramCounts.put(nGramString, ((Integer) 1).longValue());
+            } else {
+                nGramCounts.put(nGramString, nGramCounts.get(nGramString) + 1);
+            }
+            // Integrate the new data into the existing data
+            if (nGramCounts.get(nGramString) == 1) {
+                nGrams.put(nGramString, nGramTimings);
+            } else {
+                // Need to update averages
+                for (int j = 0; j < n; j++) {
+                    Double k = nGramCounts.get(nGramString).doubleValue();
+                    Double newValue = nGramTimings.get(j);
+                    Double oldValue = nGrams.get(nGramString).get(j);
+                    nGrams.get(nGramString).set(j, (oldValue * (k - 1.0) / k) + (newValue * 1.0 / k));
+                }
+            }
+        }
+        return nGrams;
+    }
+
+    public Map<String,ArrayList<Double>> getSampleBiGrams(ArrayList<String> charList,
+                                                         ArrayList<Long> charTimings,
+                                                         ArrayList<Long> interTimings) {
+        return this.getSampleNGrams(charList, charTimings, interTimings, 2);
+    }
 
     /** insertData
      *
@@ -273,25 +385,11 @@ public class NeoServerExtension
 
         String user = typeData.getUser();
 
-        ArrayList<String> charList = new ArrayList<String>();
-        ArrayList<Long> charTimings = new ArrayList<Long>();
-        ArrayList<Long> interTimings = new ArrayList<Long>();
-
         ArrayList<Map> dataList = typeData.getData();
-        for (int i = 0; i < dataList.size(); i++) {
-            Map datum = dataList.get(i);
-            charList.add((String) datum.get("character"));
-            Long keyDown = ((Double) datum.get("timeDown")).longValue();
-            Long keyUp = ((Double) datum.get("timeUp")).longValue();
-            Long delta = keyUp - keyDown;
-            charTimings.add(delta);
-            if (i > 0) {
-                Map lastDatum = dataList.get(i-1);
-                Long lastKeyUp = ((Double) lastDatum.get("timeUp")).longValue();
-                Long interDelta = keyDown - lastKeyUp;
-                interTimings.add(interDelta);
-            }
-        }
+
+        ArrayList<String> charList = this.getSampleCharList(dataList);
+        ArrayList<Long> charTimings = this.getSampleCharTimings(dataList);
+        ArrayList<Long> interTimings = this.getSampleInterTimings(dataList);
 
         this.insertSample(user, charList, charTimings, interTimings);
 
