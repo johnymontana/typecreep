@@ -34,6 +34,65 @@ public class NeoServerExtension
         this.gson_obj = new Gson();
     }
 
+
+
+    public Map<String, Object> classifySample(Map<String,ArrayList<Double>> sample){
+
+        ArrayList<String> grams = new ArrayList<String>();
+        grams.addAll(sample.keySet());
+
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("sample", grams);
+
+        String query =
+                "MATCH (a:Letter)-[k]-(b:Letter)-[*]->(u:User)\n" +
+                        "WHERE (a.char+b.char) IN {grams} \n" +
+                        "WITH (a.char+b.char) AS gram, a, b, u, k\n" +
+                        "WITH avg(a.duration) as avg_a, stdev(a.duration) as stdev_a, avg(b.duration) as avg_b, avg(k.duration) as avg_k, u, gram, count(k) as n, stdev(b.duration) as stdev_b, stdev(k.duration) as stdev_k\n" +
+                        "RETURN gram, collect({a: avg_k, stdev_a: stdev_a, b: avg_k, k: avg_k, user:u.id, n: n, stdev_b: stdev_b, stdev_k: stdev_k}) as obs";
+
+        Map<String,ArrayList<Map<String, Object>>> resultsMap = new HashMap<String, ArrayList<Map<String, Object>>>();
+
+        Iterator<Map<String, Object>> result = executionEngine.execute(query, params).iterator();
+        while (result.hasNext()) {
+            Map<String, Object> row = result.next();
+            ArrayList<Map<String, Object>> obs = (ArrayList<Map<String, Object>>)row.get("obs");
+            String gram = (String)row.get("gram");
+            resultsMap.put(gram, obs);
+        }
+
+        // classified_userse = {User.id -> avg squared errors}
+
+        Map<String, Object> classified_users = new HashMap<String, Object>();
+
+        for (Map.Entry<String, ArrayList<Double>> entry : sample.entrySet()) {
+            String key = entry.getKey();
+            ArrayList<Double> sample_vector = entry.getValue();
+
+            if (resultsMap.get(key) != null){
+                // there is at least one observation for the sample
+                // for each matching sample, calculate the squared errors and update classified_users map
+                for (Map<String, Object> o : resultsMap.get(key)) {
+                    String user = (String) o.get("user");
+                    ArrayList<Double> obs_vector = (ArrayList<Double>) o.get("vector");
+
+                    ArrayList<Double> errors = new ArrayList<Double>();
+                    for (int i=0; i < obs_vector.size(); i++){
+                        obs_vector.add(i, Math.pow(obs_vector.get(i)-sample_vector.get(i), 2));
+                    }
+
+                    classified_users.put(user, errors);
+
+                }
+            }
+
+
+
+        }
+
+        return classified_users;
+    }
+
     /** classifyWord
      *
      * @param word
@@ -193,69 +252,70 @@ public class NeoServerExtension
 
         return resultsArray;
     }
+    
 
-    /** classifyData
-     *
-     * @param dataJson
-     * @return
-     * @throws Exception
-     */
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/classify")
-    public Response classifyData(String dataJson) throws Exception {
-        TypeCreepData typeData = this.gson_obj.fromJson(dataJson, TypeCreepData.class);
-
-        ArrayList<Map> charList = typeData.getData();
-        ArrayList<Map> words = new ArrayList<Map>();
-        ArrayList<Map> charWordList = new ArrayList<Map>();
-
-        Integer count = 0;
-        String word = "";
-
-        Iterator<Map> charListIt = charList.iterator();
-
-        while (charListIt.hasNext()) {
-            count++;
-            Map<String, Object> character = charListIt.next();
-            if (character.get("character").equals(" ")){
-                Map<String, Object> wordEntry = new HashMap<String, Object>();
-                wordEntry.put("word", word);
-                wordEntry.put("characters", charWordList);
-                words.add(wordEntry);
-                word = "";
-                charWordList = new ArrayList<Map>();
-            } else {
-                Long duration;
-                if (charListIt.hasNext()) {
-                    Map<String, Object> nextChar = charList.get(count);
-                    Long timeUp = ((Double) character.get("timeUp")).longValue();
-                    Long timeDown = ((Double) nextChar.get("timeDown")).longValue();
-
-                    duration = timeDown - timeUp;
-                } else {
-                    duration = ((Double)0.0).longValue();
-                }
-
-                character.put("interDuration", duration);
-                word = word + character.get("character");
-                charWordList.add(character);
-            }
-        }
-
-        ArrayList<Object> resultsArray = new ArrayList<Object>();
-        for (Map<String, Object> w: words) {
-            resultsArray.add(classifyWord((String)w.get("word"), (ArrayList<Map>)w.get("characters")));
-
-        }
-
-        // TODO: write function to aggregate results from classifyWord
-
-        return Response.ok(objectMapper.writeValueAsString(resultsArray), MediaType.APPLICATION_JSON).build();
-
-
-    }
+//    /** classifyData
+//     *
+//     * @param dataJson
+//     * @return
+//     * @throws Exception
+//     */
+//    @POST
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Path("/classify")
+//    public Response classifyData(String dataJson) throws Exception {
+//        TypeCreepData typeData = this.gson_obj.fromJson(dataJson, TypeCreepData.class);
+//
+//        ArrayList<Map> charList = typeData.getData();
+//        ArrayList<Map> words = new ArrayList<Map>();
+//        ArrayList<Map> charWordList = new ArrayList<Map>();
+//
+//        Integer count = 0;
+//        String word = "";
+//
+//        Iterator<Map> charListIt = charList.iterator();
+//
+//        while (charListIt.hasNext()) {
+//            count++;
+//            Map<String, Object> character = charListIt.next();
+//            if (character.get("character").equals(" ")){
+//                Map<String, Object> wordEntry = new HashMap<String, Object>();
+//                wordEntry.put("word", word);
+//                wordEntry.put("characters", charWordList);
+//                words.add(wordEntry);
+//                word = "";
+//                charWordList = new ArrayList<Map>();
+//            } else {
+//                Long duration;
+//                if (charListIt.hasNext()) {
+//                    Map<String, Object> nextChar = charList.get(count);
+//                    Long timeUp = ((Double) character.get("timeUp")).longValue();
+//                    Long timeDown = ((Double) nextChar.get("timeDown")).longValue();
+//
+//                    duration = timeDown - timeUp;
+//                } else {
+//                    duration = ((Double)0.0).longValue();
+//                }
+//
+//                character.put("interDuration", duration);
+//                word = word + character.get("character");
+//                charWordList.add(character);
+//            }
+//        }
+//
+//        ArrayList<Object> resultsArray = new ArrayList<Object>();
+//        for (Map<String, Object> w: words) {
+//            resultsArray.add(classifyWord((String)w.get("word"), (ArrayList<Map>)w.get("characters")));
+//
+//        }
+//
+//        // TODO: write function to aggregate results from classifyWord
+//
+//        return Response.ok(objectMapper.writeValueAsString(resultsArray), MediaType.APPLICATION_JSON).build();
+//
+//
+//    }
 
 
     /** insertData
