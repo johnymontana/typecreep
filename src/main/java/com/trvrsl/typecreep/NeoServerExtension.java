@@ -111,7 +111,7 @@ public class NeoServerExtension
         String query = "MERGE ";
         for (int i = 0; i < charList.size(); i++) {
             String nextChar = charList.get(i);
-            if (nextChar == "'") {
+            if (nextChar.equals("'")) {
                 nextChar = "AP";
             }
             String nextCharDuration = charTimings.get(i).toString();
