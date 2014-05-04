@@ -98,6 +98,47 @@ public class NeoServerExtension
         return resultsArray;
     }
 
+    /** insertSampleQuery
+     *
+     * @param charList - list of characters in the sample
+     * @param charTimings - timings for characters themselves
+     * @param interTimings - timings between characters
+     * @return the resulting query
+     */
+    public String insertSampleQuery(ArrayList<String> charList, ArrayList<Integer> charTimings,
+                             ArrayList<Integer> interTimings) {
+        // Build the character list for the entire sample
+        String query = "MERGE ";
+        for (int i = 0; i < charList.size(); i++) {
+            String nextChar = charList.get(i);
+            String nextCharDuration = charTimings.get(i).toString();
+            query = query + "(:Letter { char: '" + nextChar + "', duration: " + nextCharDuration + " })";
+            if (i < (charList.size() - 1)) {
+                String nextInterDuration = interTimings.get(i).toString();
+                query = query + "-[:NEXT_CHAR { duration: " + nextInterDuration + " }]->";
+            }
+        }
+        // Add the user
+        query = query + "-[:FROM_USER]->(:User { id: {user} })";
+
+        return query;
+    }
+
+    /** insertSample
+     *
+     * @param user - the user name to associate with the data
+     * @param charList - list of characters in the sample
+     * @param charTimings - timings for characters themselves
+     * @param interTimings - timings between characters
+     */
+    public void insertSample(String user, ArrayList<String> charList, ArrayList<Integer> charTimings,
+                               ArrayList<Integer> interTimings) {
+        String query = this.insertSampleQuery(charList, charTimings, interTimings);
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("user", user);
+        executionEngine.execute(query, params);
+    }
+
     /** insertWord
      *
      * @param user
@@ -225,86 +266,32 @@ public class NeoServerExtension
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/insert")
     public Response insertData(String dataJson) throws Exception {
-
-
         TypeCreepData typeData = this.gson_obj.fromJson(dataJson, TypeCreepData.class);
 
-        //ArrayList<Object> resultsArray = new ArrayList<Object>();
-
         String user = typeData.getUser();
-        //String word = "placeholder";        // FIXME: get the actual word here
-        ArrayList<Map> charList = typeData.getData();       // FIXME: split on spaces
 
-        ArrayList<Map> words = new ArrayList<Map>();    // [{}]
-        Map<String, Object> wordCharMap = new HashMap<String, Object>();
+        ArrayList<String> charList = new ArrayList<String>();
+        ArrayList<Integer> charTimings = new ArrayList<Integer>();
+        ArrayList<Integer> interTimings = new ArrayList<Integer>();
 
-
-        ArrayList<Map> charWordList = new ArrayList<Map>();
-
-        Integer count = 0;
-        String word = "";
-        //String user = "";
-
-        Iterator<Map> charListIt = charList.iterator();
-
-        while (charListIt.hasNext()){
-            count++;
-            Map<String, Object> character = charListIt.next();
-            if (character.get("character").equals(" ")){
-
-
-                Map<String, Object> wordEntry = new HashMap<String, Object>();
-                wordEntry.put("word", word);
-                wordEntry.put("characters", charWordList);
-                words.add(wordEntry);
-                word = "";
-                charWordList = new ArrayList<Map>();
-
+        ArrayList<Map> dataList = typeData.getData();
+        for (int i = 0; i < dataList.size(); i++) {
+            Map datum = dataList.get(i);
+            charList.add((String) datum.get("character"));
+            Integer keyDown = (Integer) datum.get("keyDown");
+            Integer keyUp = (Integer) datum.get("keyUp");
+            Integer delta = keyUp - keyDown;
+            charTimings.add(delta);
+            if (i > 0) {
+                Map lastDatum = dataList.get(i-1);
+                Integer lastKeyUp = (Integer) lastDatum.get("keyUp");
+                Integer interDelta = keyDown - lastKeyUp;
+                interTimings.add(interDelta);
             }
-
-            else {
-                // append character to charWordList
-                // append ACTUAL character to word
-                // calculate inter-character duration here, add to character map
-
-                Long duration;
-                if (charListIt.hasNext()) {
-                    Map<String, Object> nextChar = charList.get(count);
-
-                    Long timeUp = ((Double) character.get("timeUp")).longValue();
-                    Long timeDown = ((Double) nextChar.get("timeDown")).longValue();
-
-                    duration = timeDown - timeUp;
-                }
-                else {
-                    duration = ((Double)0.0).longValue();
-                }
-
-                character.put("interDuration", duration);
-
-                word = word + character.get("character");
-                charWordList.add(character);
-            }
-
-
-
-
-
-
         }
 
-        ArrayList<Object> resultsArray = new ArrayList<Object>();
-        for (Map<String, Object> w : words){
-            resultsArray.add(insertWord(user, (String)w.get("word"), (ArrayList<Map>)w.get("characters") ));
-        }
-        //ArrayList<Object> resultsArray = insertWord(user, word, charList);
+        this.insertSample(user, charList, charTimings, interTimings);
 
-
-
-        return Response.ok(objectMapper.writeValueAsString(resultsArray), MediaType.APPLICATION_JSON).build();
-
+        return Response.ok().build();
     }
-
-
-
 }
