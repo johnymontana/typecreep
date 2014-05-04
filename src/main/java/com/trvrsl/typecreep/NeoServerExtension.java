@@ -278,13 +278,13 @@ public class NeoServerExtension
         for (int i = 0; i < dataList.size(); i++) {
             Map datum = dataList.get(i);
             charList.add((String) datum.get("character"));
-            Integer keyDown = (Integer) datum.get("timeDown");
-            Integer keyUp = (Integer) datum.get("timeUp");
+            Integer keyDown = ((Double) datum.get("timeDown")).intValue();
+            Integer keyUp = ((Double) datum.get("timeUp")).intValue();
             Integer delta = keyUp - keyDown;
             charTimings.add(delta);
             if (i > 0) {
                 Map lastDatum = dataList.get(i-1);
-                Integer lastKeyUp = (Integer) lastDatum.get("timeUp");
+                Integer lastKeyUp = ((Double) lastDatum.get("timeUp")).intValue();
                 Integer interDelta = keyDown - lastKeyUp;
                 interTimings.add(interDelta);
             }
