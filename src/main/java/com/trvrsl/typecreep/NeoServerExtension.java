@@ -105,8 +105,8 @@ public class NeoServerExtension
      * @param interTimings - timings between characters
      * @return the resulting query
      */
-    public String insertSampleQuery(ArrayList<String> charList, ArrayList<Integer> charTimings,
-                             ArrayList<Integer> interTimings) {
+    public String insertSampleQuery(ArrayList<String> charList, ArrayList<Long> charTimings,
+                             ArrayList<Long> interTimings) {
         // Build the character list for the entire sample
         String query = "MERGE ";
         for (int i = 0; i < charList.size(); i++) {
@@ -134,8 +134,8 @@ public class NeoServerExtension
      * @param charTimings - timings for characters themselves
      * @param interTimings - timings between characters
      */
-    public void insertSample(String user, ArrayList<String> charList, ArrayList<Integer> charTimings,
-                               ArrayList<Integer> interTimings) {
+    public void insertSample(String user, ArrayList<String> charList, ArrayList<Long> charTimings,
+                               ArrayList<Long> interTimings) {
         String query = this.insertSampleQuery(charList, charTimings, interTimings);
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("user", user);
@@ -274,21 +274,21 @@ public class NeoServerExtension
         String user = typeData.getUser();
 
         ArrayList<String> charList = new ArrayList<String>();
-        ArrayList<Integer> charTimings = new ArrayList<Integer>();
-        ArrayList<Integer> interTimings = new ArrayList<Integer>();
+        ArrayList<Long> charTimings = new ArrayList<Long>();
+        ArrayList<Long> interTimings = new ArrayList<Long>();
 
         ArrayList<Map> dataList = typeData.getData();
         for (int i = 0; i < dataList.size(); i++) {
             Map datum = dataList.get(i);
             charList.add((String) datum.get("character"));
-            Integer keyDown = ((Double) datum.get("timeDown")).intValue();
-            Integer keyUp = ((Double) datum.get("timeUp")).intValue();
-            Integer delta = keyUp - keyDown;
+            Long keyDown = ((Double) datum.get("timeDown")).longValue();
+            Long keyUp = ((Double) datum.get("timeUp")).longValue();
+            Long delta = keyUp - keyDown;
             charTimings.add(delta);
             if (i > 0) {
                 Map lastDatum = dataList.get(i-1);
-                Integer lastKeyUp = ((Double) lastDatum.get("timeUp")).intValue();
-                Integer interDelta = keyDown - lastKeyUp;
+                Long lastKeyUp = ((Double) lastDatum.get("timeUp")).longValue();
+                Long interDelta = keyDown - lastKeyUp;
                 interTimings.add(interDelta);
             }
         }
