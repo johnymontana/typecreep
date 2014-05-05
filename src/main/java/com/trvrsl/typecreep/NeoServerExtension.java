@@ -81,6 +81,7 @@ public class NeoServerExtension
                         obs_vector.add(i, Math.pow(obs_vector.get(i)-sample_vector.get(i), 2));
                     }
 
+                    // FIXME: check if user exists in classified_users keys and increment errors instead of overwrite
                     classified_users.put(user, errors);
 
                 }
@@ -252,7 +253,25 @@ public class NeoServerExtension
 
         return resultsArray;
     }
-    
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/classify")
+
+    public Response classifyData(String dataJson) throws Exception {
+        TypeCreepData typeData = this.gson_obj.fromJson(dataJson, TypeCreepData.class);
+
+        ArrayList<String> charList = getSampleCharList(typeData.getData());
+        ArrayList<Long> charTimings = getSampleCharTimings(typeData.getData());
+        ArrayList<Long> interTimings = getSampleInterTimings(typeData.getData());
+
+        Map<String,ArrayList<Double>> sampleNGrams = getSampleNGrams(charList, charTimings, interTimings, 2);
+
+        Map<String,Object> classifiedUsers = classifySample(sampleNGrams);
+
+        return Response.ok(objectMapper.writeValueAsString(classifiedUsers), MediaType.APPLICATION_JSON).build();
+    }
 
 //    /** classifyData
 //     *
