@@ -81,7 +81,7 @@ public class NeoServerExtension
 
                     ArrayList<Double> errors = new ArrayList<Double>();
                     for (int i=0; i < obs_vector.size(); i++){
-                        obs_vector.add(i, Math.pow(obs_vector.get(i)-sample_vector.get(i), 2));
+                        errors.add(Math.pow(obs_vector.get(i)-sample_vector.get(i), 2));
                     }
 
                     // FIXME: check if user exists in classified_users keys and increment errors instead of overwrite
