@@ -101,7 +101,7 @@ public class NeoServerExtension
                             Double num = (error * count) + errors.get(i);       // calculate updated average error
                             Integer denom = count + 1;
 
-                            classified_users.put(user, num/denom);
+                            classified_users.put(user, num / denom);
                             classified_users_count.put(user, denom);
 
                         }
@@ -113,7 +113,7 @@ public class NeoServerExtension
                             error += errors.get(i);
                         }
 
-                        classified_users.put(user, error/errors.size()/errors.size());  // current average error 
+                        classified_users.put(user, error/errors.size());  // current average error
                         classified_users_count.put(user, errors.size());
                     }
 
