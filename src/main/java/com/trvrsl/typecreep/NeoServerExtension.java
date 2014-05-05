@@ -51,12 +51,12 @@ public class NeoServerExtension
                         "WITH avg(a.duration) as avg_a, stdev(a.duration) as stdev_a, avg(b.duration) as avg_b, avg(k.duration) as avg_k, u, gram, count(k) as n, stdev(b.duration) as stdev_b, stdev(k.duration) as stdev_k\n" +
                         "RETURN gram, collect({a: avg_k, stdev_a: stdev_a, b: avg_k, k: avg_k, user:u.id, n: n, stdev_b: stdev_b, stdev_k: stdev_k}) as obs";
 
-        Map<String,ArrayList<Map<String, Object>>> resultsMap = new HashMap<String, ArrayList<Map<String, Object>>>();
+        Map<String,List<Map<String, Object>>> resultsMap = new HashMap<String, List<Map<String, Object>>>();
 
         Iterator<Map<String, Object>> result = executionEngine.execute(query, params).iterator();
         while (result.hasNext()) {
             Map<String, Object> row = result.next();
-            ArrayList<Map<String, Object>> obs = (ArrayList<Map<String, Object>>)row.get("obs");
+            List<Map<String, Object>> obs = (List<Map<String, Object>>)row.get("obs");
             String gram = (String)row.get("gram");
             resultsMap.put(gram, obs);
         }
