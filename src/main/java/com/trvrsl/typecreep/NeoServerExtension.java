@@ -86,25 +86,34 @@ public class NeoServerExtension
                         errors.add(Math.pow(obs_vector.get(i)-sample_vector.get(i), 2));
                     }
 
-                    // FIXME: check if user exists in classified_users keys and increment errors instead of overwrite
 
-                    if (classified_users.get(user) != null){
-                        Double error = (Double)classified_users.get(user);
+
+                    if (classified_users.get(user) != null){    // we have observed this user previously
+
+
+
                         for (int i=0; i < errors.size(); i++){
-                            error += errors.get(i);
-                            error = error / classified_users_count.get(user);
-                            classified_users_count.put(user, classified_users_count.get(user) + 1);
+                            //error += errors.get(i);
+                            //error = error / classified_users_count.get(user);
+                            Double error = (Double)classified_users.get(user); // get current error
+                            Integer count = classified_users_count.get(user);    // get count of observations
+
+                            Double num = (error * count) + errors.get(i);       // calculate updated average error
+                            Integer denom = count + 1;
+
+                            classified_users.put(user, num/denom);
+                            classified_users_count.put(user, denom);
 
                         }
 
-                        classified_users.put(user, classified_users.get(user) / classified_users_count.get(user));
-                    } else {
+
+                    } else {                                    // have not observed this user previously
                         Double error = 0.0;
                         for (int i=0; i < errors.size(); i++) {
                             error += errors.get(i);
                         }
 
-                        classified_users.put(user, error/errors.size()/errors.size());
+                        classified_users.put(user, error/errors.size()/errors.size());  // current average error 
                         classified_users_count.put(user, errors.size());
                     }
 
