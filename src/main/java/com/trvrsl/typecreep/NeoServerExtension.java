@@ -36,7 +36,7 @@ public class NeoServerExtension
 
 
 
-    public Map<String, Object> classifySample(Map<String,ArrayList<Double>> sample){
+    public Map<String, Double> classifySample(Map<String,ArrayList<Double>> sample){
 
         ArrayList<String> grams = new ArrayList<String>();
         grams.addAll(sample.keySet());
@@ -293,7 +293,7 @@ public class NeoServerExtension
 
         Map<String,ArrayList<Double>> sampleNGrams = getSampleNGrams(charList, charTimings, interTimings, 2);
 
-        Map<String,Object> classifiedUsers = classifySample(sampleNGrams);
+        Map<String,Double> classifiedUsers = classifySample(sampleNGrams);
 
         return Response.ok(objectMapper.writeValueAsString(classifiedUsers), MediaType.APPLICATION_JSON).build();
     }
