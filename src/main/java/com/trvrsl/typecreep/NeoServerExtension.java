@@ -65,8 +65,10 @@ public class NeoServerExtension
         }
 
         // classified_userse = {User.id -> avg squared errors}
+        // classified_users_count = {User.id -> count of ngrams observed for this user
 
         Map<String, Object> classified_users = new HashMap<String, Object>();
+        Map<String, Integer> classified_users_count = new HashMap<String, Integer>();
 
         for (Map.Entry<String, ArrayList<Double>> entry : sample.entrySet()) {
             String key = entry.getKey();
@@ -85,7 +87,25 @@ public class NeoServerExtension
                     }
 
                     // FIXME: check if user exists in classified_users keys and increment errors instead of overwrite
-                    classified_users.put(user, errors);
+
+                    if (classified_users.get(user) != null){
+                        Double error = (Double)classified_users.get(user);
+                        for (int i=0; i < errors.size(); i++){
+                            error += errors.get(i);
+                            error = error / classified_users_count.get(user);
+                            classified_users_count.put(user, classified_users_count.get(user) + 1);
+
+                        }
+                    } else {
+                        Double error = 0.0;
+                        for (int i=0; i < errors.size(); i++) {
+                            error += errors.get(i);
+                        }
+
+                        classified_users.put(user, error/errors.size());
+                        classified_users_count.put(user, errors.size());
+                    }
+
 
                 }
             }
