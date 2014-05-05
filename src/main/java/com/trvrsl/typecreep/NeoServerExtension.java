@@ -422,6 +422,8 @@ public class NeoServerExtension
      * where `l` is a letter timing and `i` is an inter-letter timing.
      *
      * @param charList - the list of characters (letters) in the sample
+     * @param charTimings - the list of character timings
+     * @param interTimings - the list of inter-character timings
      * @param n - the number of grams to grammify the thing into
      */
     public Map<String,ArrayList<Double>> getSampleNGrams(ArrayList<String> charList,
