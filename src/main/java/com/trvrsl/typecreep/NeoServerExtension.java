@@ -67,7 +67,7 @@ public class NeoServerExtension
         // classified_userse = {User.id -> avg squared errors}
         // classified_users_count = {User.id -> count of ngrams observed for this user
 
-        Map<String, Object> classified_users = new HashMap<String, Object>();
+        Map<String, Double> classified_users = new HashMap<String, Double>();
         Map<String, Integer> classified_users_count = new HashMap<String, Integer>();
 
         for (Map.Entry<String, ArrayList<Double>> entry : sample.entrySet()) {
@@ -96,13 +96,15 @@ public class NeoServerExtension
                             classified_users_count.put(user, classified_users_count.get(user) + 1);
 
                         }
+
+                        classified_users.put(user, classified_users.get(user) / classified_users_count.get(user));
                     } else {
                         Double error = 0.0;
                         for (int i=0; i < errors.size(); i++) {
                             error += errors.get(i);
                         }
 
-                        classified_users.put(user, error/errors.size());
+                        classified_users.put(user, error/errors.size()/errors.size());
                         classified_users_count.put(user, errors.size());
                     }
 
