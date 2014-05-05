@@ -70,14 +70,14 @@ public class NeoServerExtension
 
         for (Map.Entry<String, ArrayList<Double>> entry : sample.entrySet()) {
             String key = entry.getKey();
-            ArrayList<Double> sample_vector = entry.getValue();
+            List<Double> sample_vector = entry.getValue();
 
             if (resultsMap.get(key) != null){
                 // there is at least one observation for the sample
                 // for each matching sample, calculate the squared errors and update classified_users map
                 for (Map<String, Object> o : resultsMap.get(key)) {
                     String user = (String) o.get("user");
-                    ArrayList<Double> obs_vector = (ArrayList<Double>) o.get("vector");
+                    List<Double> obs_vector = (List<Double>) o.get("vector");
 
                     ArrayList<Double> errors = new ArrayList<Double>();
                     for (int i=0; i < obs_vector.size(); i++){
