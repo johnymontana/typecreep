@@ -59,9 +59,9 @@ public class NeoServerExtension
             String first = gram.substring(0,1);
             String second = gram.substring(1,2);
 
-            if (first.length() == 1 && second.length() == 1 && !first.equals(" ") && !second.equals(" ")) {
+            if (first.length() == 1 && second.length() == 1) { // && !first.equals(" ") && !second.equals(" ")) {
 
-                query += "WHERE (a.char =" + first + " AND b.char =" + second + ")";
+                query += "WHERE (a.char ='" + first + "' AND b.char ='" + second + "')";
 
                 if (gram_it.hasNext()) {
                     query += " OR \n";
