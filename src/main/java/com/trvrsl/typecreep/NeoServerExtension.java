@@ -53,6 +53,9 @@ public class NeoServerExtension
         while (gram_it.hasNext()) {
             String gram = gram_it.next();
 
+            System.out.println("GRAM******: ");
+            System.out.println(gram);
+            
             String first = gram.substring(0,0);
             String second = gram.substring(1,1);
 
@@ -77,7 +80,7 @@ public class NeoServerExtension
                 "RETURN gram, collect({vector: vector, a: avg_k, b: avg_k, k: avg_k, user:u.id, n: n}) as obs";
 
         System.out.println(query);
-        
+
         (new BufferedWriter( new FileWriter("query.cql"))).write(query);
         Map<String,List<Map<String, Object>>> resultsMap = new HashMap<String, List<Map<String, Object>>>();
 
