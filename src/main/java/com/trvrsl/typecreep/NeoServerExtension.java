@@ -76,7 +76,8 @@ public class NeoServerExtension
                 "WITH [avg_a, avg_k, avg_b] AS vector, avg_a, avg_b, avg_k, gram, n, u WHERE n > 2\n" +
                 "RETURN gram, collect({vector: vector, a: avg_k, b: avg_k, k: avg_k, user:u.id, n: n}) as obs";
 
-
+        System.out.println(query);
+        
         (new BufferedWriter( new FileWriter("query.cql"))).write(query);
         Map<String,List<Map<String, Object>>> resultsMap = new HashMap<String, List<Map<String, Object>>>();
 
