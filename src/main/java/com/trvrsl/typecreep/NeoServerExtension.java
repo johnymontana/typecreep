@@ -50,15 +50,19 @@ public class NeoServerExtension
 
         while (gram_it.hasNext()) {
             String gram = gram_it.next();
+
             String first = gram.substring(0,0);
             String second = gram.substring(1,1);
 
-            query += "WHERE (a.char =" + first + " AND b.char =" + second + ")";
-            
-            if (gram_it.hasNext()) {
-                query += " OR \n";
-            } else {
-                query += "\n";
+            if (first.length() == 1 && second.length() == 2) {
+
+                query += "WHERE (a.char =" + first + " AND b.char =" + second + ")";
+
+                if (gram_it.hasNext()) {
+                    query += " OR \n";
+                } else {
+                    query += "\n";
+                }
             }
         }
 
