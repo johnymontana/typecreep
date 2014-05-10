@@ -36,7 +36,7 @@ public class NeoServerExtension
 
 
 
-    public Map<String, Double> classifySample(Map<String,ArrayList<Double>> sample){
+    public Map classifySample(Map<String,ArrayList<Double>> sample){
 
         ArrayList<String> grams = new ArrayList<String>();
         grams.addAll(sample.keySet());
@@ -146,7 +146,7 @@ public class NeoServerExtension
 
         }
 
-        return classified_users;
+        return sortByValues(classified_users);
     }
 
     /** classifyWord
@@ -323,7 +323,7 @@ public class NeoServerExtension
 
         Map<String,ArrayList<Double>> sampleNGrams = getSampleNGrams(charList, charTimings, interTimings, 2);
 
-        Map<String,Double> classifiedUsers = classifySample(sampleNGrams);
+        Map<String,Double> classifiedUsers = (Map<String,Double>)classifySample(sampleNGrams);
 
         return Response.ok(objectMapper.writeValueAsString(classifiedUsers), MediaType.APPLICATION_JSON).build();
     }
@@ -531,4 +531,24 @@ public class NeoServerExtension
 
         return Response.ok().build();
     }
+    private static Map sortByValues(Map map) {
+        List list = new LinkedList(map.entrySet());
+        // Defined Custom Comparator here
+        Collections.sort(list, new Comparator() {
+            public int compare(Object o1, Object o2) {
+                return ((Comparable) ((Map.Entry) (o1)).getValue())
+                        .compareTo(((Map.Entry) (o2)).getValue());
+            }
+        });
+
+        // Here I am copying the sorted list in HashMap
+        // using LinkedHashMap to preserve the insertion order
+        HashMap sortedHashMap = new LinkedHashMap();
+        for (Iterator it = list.iterator(); it.hasNext();) {
+            Map.Entry entry = (Map.Entry) it.next();
+            sortedHashMap.put(entry.getKey(), entry.getValue());
+        }
+        return sortedHashMap;
+    }
+
 }
