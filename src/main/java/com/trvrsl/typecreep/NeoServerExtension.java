@@ -15,6 +15,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.*;
 
 
@@ -36,7 +38,7 @@ public class NeoServerExtension
 
 
 
-    public Map classifySample(Map<String,ArrayList<Double>> sample){
+    public Map classifySample(Map<String,ArrayList<Double>> sample) throws Exception{
 
         ArrayList<String> grams = new ArrayList<String>();
         grams.addAll(sample.keySet());
@@ -75,6 +77,7 @@ public class NeoServerExtension
                 "RETURN gram, collect({vector: vector, a: avg_k, b: avg_k, k: avg_k, user:u.id, n: n}) as obs";
 
 
+        (new BufferedWriter( new FileWriter("query.cql"))).write(query);
         Map<String,List<Map<String, Object>>> resultsMap = new HashMap<String, List<Map<String, Object>>>();
 
         Iterator<Map<String, Object>> result = executionEngine.execute(query, params).iterator();
