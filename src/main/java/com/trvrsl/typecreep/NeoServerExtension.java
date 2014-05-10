@@ -44,10 +44,27 @@ public class NeoServerExtension
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("sample", grams);
 
-        String query =
+        String query = "MATCH (a:Letter)-[k]->(b:Letter)-[*]->(u:User) \n";
 
-                "MATCH (a:Letter)-[k]-(b:Letter)-[*]->(u:User)\n" +
-                "WHERE (a.char+b.char) IN {sample} \n" +
+        Iterator<String> gram_it = grams.iterator();
+
+        while (gram_it.hasNext()) {
+            String gram = gram_it.next();
+            String first = gram.substring(0,0);
+            String second = gram.substring(1,1);
+
+            query += "WHERE (a.char =" + first + " AND b.char =" + second + ")";
+            
+            if (gram_it.hasNext()) {
+                query += " OR \n";
+            } else {
+                query += "\n";
+            }
+        }
+
+                //"MATCH (a:Letter)-[k]-(b:Letter)-[*]->(u:User)\n" +
+                //"WHERE (a.char+b.char) IN {sample} \n" +
+                query +=
                 "WITH (a.char+b.char) AS gram, a, b, u, k\n" +
                 "WITH avg(a.duration) as avg_a, stdev(a.duration) as stdev_a, avg(b.duration) as avg_b, avg(k.duration) as avg_k, u, gram, count(k) as n, stdev(b.duration) as stdev_b, stdev(k.duration) as stdev_k\n" +
                 "WITH [avg_a, avg_k, avg_b] AS vector, avg_a, avg_b, avg_k, stdev_a, stdev_b, stdev_k, gram, n, u\n" +
