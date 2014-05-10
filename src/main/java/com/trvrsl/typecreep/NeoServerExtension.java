@@ -46,7 +46,7 @@ public class NeoServerExtension
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("sample", grams);
 
-        String query = "MATCH (a:Letter)-[k]->(b:Letter)-[*]->(u:User) \n";
+        String query = "MATCH (a:Letter)-[k]->(b:Letter)-[*]->(u:User) \n WHERE ";
 
         Iterator<String> gram_it = grams.iterator();
 
@@ -61,7 +61,7 @@ public class NeoServerExtension
 
             if (first.length() == 1 && second.length() == 1) { // && !first.equals(" ") && !second.equals(" ")) {
 
-                query += "WHERE (a.char ='" + first + "' AND b.char ='" + second + "')";
+                query += "(a.char ='" + first + "' AND b.char ='" + second + "')";
 
                 if (gram_it.hasNext()) {
                     query += " OR \n";
