@@ -74,7 +74,7 @@ public class NeoServerExtension
                 //"MATCH (a:Letter)-[k]-(b:Letter)-[*]->(u:User)\n" +
                 //"WHERE (a.char+b.char) IN {sample} \n" +
                 query +=
-                "MATCH (b)-[*}->(u:User) \n" +
+                "MATCH (b)-[*1..20]->(u:User) \n" +
                 "WITH (a.char+b.char) AS gram, a, b, u, k\n" +
                 "WITH avg(a.duration) as avg_a, avg(b.duration) as avg_b, avg(k.duration) as avg_k, u, gram, count(k) as n\n" +
                 "WITH [avg_a, avg_k, avg_b] AS vector, avg_a, avg_b, avg_k, gram, n, u WHERE n > 2\n" +
