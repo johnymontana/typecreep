@@ -55,11 +55,11 @@ public class NeoServerExtension
 
             System.out.println("GRAM******: ");
             System.out.println(gram);
-            
-            String first = gram.substring(0,0);
-            String second = gram.substring(1,1);
 
-            if (first.length() == 1 && second.length() == 2) {
+            String first = gram.substring(0,1);
+            String second = gram.substring(1,2);
+
+            if (first.length() == 1 && second.length() == 2 && !first.equals(" ") && !second.equals(" ")) {
 
                 query += "WHERE (a.char =" + first + " AND b.char =" + second + ")";
 
