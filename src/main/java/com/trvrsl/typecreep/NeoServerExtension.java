@@ -538,7 +538,9 @@ public class NeoServerExtension
 
         this.insertSample(user, charList, charTimings, interTimings);
 
-        return Response.ok().build();
+        Map<String,String> successResponse = new HashMap<String,String>();
+        successResponse.put("status", "success");
+        return Response.ok(objectMapper.writeValueAsString(successResponse)).build();
     }
     private static Map sortByValues(Map map) {
         List list = new LinkedList(map.entrySet());
